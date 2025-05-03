@@ -124,9 +124,152 @@ const filmData = filmy.find((film) => film.id === filmId);
 const cardTitleElm = document.querySelector('.card-title');
 const cardTextElm = document.querySelector('.card-text');
 const posterElm = document.querySelector('.img-fluid');
+const noteFormElm = document.querySelector('#note-form');
+const premieraElm = document.querySelector('#premiera');
+const starElm = document.querySelectorAll('.fa-star');
 
 cardTitleElm.textContent = filmData.nazev;
 cardTextElm.textContent = filmData.popis;
 posterElm.src = filmData.plakat.url;
 posterElm.width = filmData.plakat.sirka;
 posterElm.height = filmData.plakat.vyska;
+
+/* --- premiera --- */
+
+const premiereDateText = () => {
+  const daysDiff = dayjs(filmData.premiera).diff(dayjs(), 'days');
+
+  if (daysDiff === 0) {
+    return ', což je dneska!';
+  } else if (daysDiff < 0) {
+    return `, což bylo před ${daysDiff * -1} ${
+      daysDiff === -1 ? 'dnem.' : 'dny.'
+    }`;
+  } else {
+    if (daysDiff === 1) {
+      return `, což bude za 1 den.`;
+    } else if (daysDiff < 5) {
+      return `, což bude za ${daysDiff} dny.`;
+    } else return `, což bude za ${daysDiff} dní.`;
+  }
+};
+
+premieraElm.innerHTML = `Premiéra <strong>${dayjs(filmData.premiera).format(
+  'D. M. YYYY',
+)}</strong>${premiereDateText()}`;
+
+/* --- zprava --- */
+
+const handleSubmit = (event) => {
+  event.preventDefault;
+
+  const messageInputElm = document.querySelector('#message-input');
+  const termsCheckboxElm = document.querySelector('#terms-checkbox');
+
+  console.log(messageInputElm.value);
+  if (messageInputElm.value.length === 0) {
+    messageInputElm.classList.add('is-invalid');
+    messageInputElm.focus();
+  } else if (termsCheckboxElm.checked === false) {
+    termsCheckboxElm.classList.add('is-invalid');
+    termsCheckboxElm.focus();
+  } else {
+    noteFormElm.innerHTML = `<p class="card-text">${messageInputElm.value}</p>`;
+  }
+};
+
+noteFormElm.querySelector('button').addEventListener('click', handleSubmit);
+
+/* --- hodnocení --- */
+
+const ratingStar = (number) => {
+  starElm.forEach((star, index) => {
+    if (index < number) {
+      star.classList.add('fas');
+      star.classList.remove('far');
+    } else {
+      star.classList.add('far');
+      star.classList.remove('fas');
+    }
+  });
+};
+
+starElm.forEach((star) => {
+  star.addEventListener('click', (event) => {
+    ratingStar(event.target.textContent);
+  });
+  star.addEventListener('mouseenter', (event) => {
+    ratingStar(event.target.textContent);
+  });
+  star.addEventListener('mouseleave', () => ratingStar(0));
+});
+
+/* --- prehravac --- */
+const prehravacElm = document.querySelector('#prehravac');
+const videoElm = document.querySelector('video');
+const currentTimeElm = document.querySelector('.current-time');
+const controlsElm = document.querySelector('.player-controls');
+
+videoElm.volume = 0;
+let timeOutMenu;
+
+const videoPlaying = () => {
+  if (videoElm.paused) {
+    videoElm.play();
+  } else {
+    videoElm.pause();
+  }
+  prehravacElm.classList.toggle('playing');
+};
+
+videoElm.addEventListener('click', videoPlaying);
+
+document.addEventListener('keydown', (e) => {
+  if (
+    e.code === 'Space' &&
+    e.target.tagName !== 'TEXTAREA' &&
+    e.target.tagName !== 'INPUT' &&
+    e.target.tagName !== 'BUTTON'
+  ) {
+    videoPlaying();
+  }
+});
+
+controlsElm.addEventListener('click', (e) => {
+  if (e.target.matches('.play, .pause')) {
+    videoPlaying();
+  }
+});
+
+videoElm.addEventListener('timeupdate', () => {
+  let time = Math.round(videoElm.currentTime);
+  let minuty = Math.floor(time / 60);
+  let sekundy = time % 60;
+  currentTimeElm.innerHTML = `${minuty >= 10 ? minuty : '0' + minuty}:${
+    sekundy >= 10 ? sekundy : '0' + sekundy
+  }`;
+});
+
+const showControlMenu = () => {
+  clearTimeout(timeOutMenu);
+  controlsElm.classList.remove('hidden');
+  timeOutMenu = setTimeout(hideControlMenu, 3000);
+};
+
+const hideControlMenu = () => {
+  controlsElm.classList.add('hidden');
+};
+
+videoElm.addEventListener('mousemove', showControlMenu);
+document.addEventListener('keydown', (e) => {
+  if (
+    e.target.tagName !== 'TEXTAREA' &&
+    e.target.tagName !== 'INPUT' &&
+    e.target.tagName !== 'BUTTON'
+  ) {
+    showControlMenu();
+  }
+});
+
+videoElm.addEventListener('touchstart', showControlMenu);
+videoElm.addEventListener('touchstart', videoPlaying);
